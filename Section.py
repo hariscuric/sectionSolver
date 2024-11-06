@@ -8,6 +8,97 @@ def inputSection():
     return 0
 
 
+class material:
+    def __init__(self):
+        pass
+
+    def stress(self, strain):
+        return 0.0
+    
+    def tangentModulus(self, strain):
+        return 0.0
+    
+
+class concrete(material):
+    def __init__(self,fck,gamaM):
+        super().__init__()
+        if fck <= 50.0:
+            self.ec2 = 0.002
+            self.ecu2 = 0.0035
+            self.n = 2.0
+        else:
+            self.ec2 = (2.0+0.085*(fck-50)**0.53)/1000
+            self.ecu2 = (2.6+35*((90-fck)/100)**4)/1000
+            self.n = 1.4+23.4*((90-fck)/100)**4
+        self.fck = fck
+        self.fcd = fck/gamaM
+
+    def stress(self, strain):
+        if strain<0.0:
+            return 0.0
+        elif strain<=self.ec2:
+            return self.fcd * (1-(1-strain/self.ec2)**self.n)
+        elif strain<=self.ecu2:
+            return self.fcd
+        else:
+            return 0.0
+        
+    def tangentModulus(self, strain):
+        if strain<0.0:
+            return 0.0
+        elif strain<=self.ec2:
+            return (self.n*self.fcd/self.ec2)*((1-strain/self.ec2)**(self.n-1))
+        else:
+            return 0.0
+        
+class steel(material):
+    def __init__(self,fyk,gamaM,Class="B"):
+        super().__init__()
+        self.fyk = fyk
+        self.fyd = fyk/gamaM
+        if Class == "A":
+            self.k = 1.05
+            self.euk = 0.025
+        elif Class == "B":
+            self.k = 1.08
+            self.euk = 0.05
+        elif Class == "C":
+            self.k = 1.15
+            self.euk = 0.075
+        else:
+            self.k = 1.08
+            self.euk = 0.05
+
+        self.eud = self.euk*0.9
+
+    def stress(self, strain):
+        Es = 200000
+        ey = self.fyd/Es
+        if strain<=ey and strain>=-ey:
+            return Es*strain
+        elif strain>ey and strain<=self.eud:
+            return self.fyd + (strain-ey)*(self.fyd*(self.k-1)/(self.euk-ey))
+        elif strain<-ey and strain>=-self.eud:
+            return -self.fyd + (strain-ey)*(self.fyd*(self.k-1)/(self.euk-ey))
+        else:
+            return 0.0
+        
+    def tangentModulus(self, strain):
+        Es = 200000
+        ey = self.fyd/Es
+        if strain<=ey and strain>=-ey:
+            return Es
+        elif strain>ey and strain<=self.eud:
+            return (self.fyd*(self.k-1)/(self.euk-ey))
+        elif strain<-ey and strain>=-self.eud:
+            return (self.fyd*(self.k-1)/(self.euk-ey))
+        else:
+            return 0.0
+
+
+
+
+
 class section:
     def __init__(self, sectionCorners, rebarPositions, rebarDiameters):
         self.concreteCorners = sectionCorners
