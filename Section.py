@@ -40,6 +40,8 @@ class concrete(material):
             return self.fcd * (1-(1-strain/self.ec2)**self.n)
         elif strain<=self.ecu2:
             return self.fcd
+        elif strain>self.ecu2 and strain<=self.ecu2*1.05:
+            return self.fcd*((self.ecu2*1.05-strain)/(0.05*self.ecu2))
         else:
             return 0.0
         
@@ -48,9 +50,14 @@ class concrete(material):
             return 0.0
         elif strain<=self.ec2:
             return (self.n*self.fcd/self.ec2)*((1-strain/self.ec2)**(self.n-1))
+        elif strain>self.ecu2 and strain<=self.ecu2*1.05:
+            return -self.fcd/(0.05*self.ecu2)
         else:
             return 0.0
-        
+
+
+
+
 class steel(material):
     def __init__(self,fyk,gamaM,Class="B"):
         super().__init__()
@@ -79,7 +86,11 @@ class steel(material):
         elif strain>ey and strain<=self.eud:
             return self.fyd + (strain-ey)*(self.fyd*(self.k-1)/(self.euk-ey))
         elif strain<-ey and strain>=-self.eud:
-            return -self.fyd + (strain-ey)*(self.fyd*(self.k-1)/(self.euk-ey))
+            return -self.fyd + (strain+ey)*(self.fyd*(self.k-1)/(self.euk-ey))
+        elif strain>self.eud and strain<=self.euk:
+            return (self.fyd + (self.eud-ey)*(self.fyd*(self.k-1)/(self.euk-ey)))*(self.euk-strain)/(self.euk-self.eud)
+        elif strain<-self.eud and strain>=-self.euk:
+            return (-self.fyd + (-self.eud+ey)*(self.fyd*(self.k-1)/(self.euk-ey)))*(-self.euk-strain)/(-self.euk+self.eud)
         else:
             return 0.0
         
@@ -92,8 +103,13 @@ class steel(material):
             return (self.fyd*(self.k-1)/(self.euk-ey))
         elif strain<-ey and strain>=-self.eud:
             return (self.fyd*(self.k-1)/(self.euk-ey))
+        elif strain>self.eud and strain<=self.euk:
+            return -(self.fyd + (self.eud-ey)*(self.fyd*(self.k-1)/(self.euk-ey)))/(self.euk-self.eud)
+        elif strain<-self.eud and strain>=-self.euk:
+            return -(self.fyd + (self.eud-ey)*(self.fyd*(self.k-1)/(self.euk-ey)))/(self.euk-self.eud)
         else:
             return 0.0
+        
 
 
 
@@ -104,6 +120,24 @@ class section:
         self.concreteCorners = sectionCorners
         self.rebarPositions = rebarPositions
         self.rebarDiameters = rebarDiameters
+        self.sectionMaterial = material()
+        self.rebarMaterial = material()
+        self.sectionDiscretisation = 10
+
+
+    def assignSectionMaterial(self, Mat:material):
+        self.sectionMaterial = Mat
+
+    def assignRebarMaterial(self, Mat:material):
+        self.rebarMaterial = Mat
+
+    def assignDiscretisation(self, n:int):
+        self.sectionDiscretisation = n
+
+    def computeNMM(self,axialStrain,curvatureM3,curvatureM2):
+        return np.array([0.0,0.0,0.0], dtype=float)
+
+    
 
     def __str__(self):
         a = "Concrete Corners:\n"
@@ -144,3 +178,21 @@ class ordinaryRectangularSection(section):
 
 
         super().__init__(sectionCorners, rebarPositions, rebarDiameters)
+        self.width = width; self.height = height
+
+    def computeNMM(self,Strains):
+        a = Strains[0]
+        c3 = Strains[1]
+        c2 = Strains[2]
+        N = 0.0; M3 = 0.0; M2 = 0.0
+        incrementWidth = self.width/self.sectionDiscretisation
+        incrementHeight = self.height/self.sectionDiscretisation
+        for i in range(self.sectionDiscretisation):
+            for ii in range(self.sectionDiscretisation):
+                X = -self.width/2+incrementWidth/2+incrementWidth*ii
+                Y = -self.height/2+incrementHeight/2+incrementHeight*i
+                n = self.sectionMaterial.stress(a+c3*Y-c2*X)*incrementWidth*incrementHeight
+                m3 = n*Y; m2 = -n*X
+                N+=n; M3+=m3; M2+=m2
+        return np.array([N,M3,M2],dtype=float)
+            

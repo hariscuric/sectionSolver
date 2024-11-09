@@ -3,8 +3,9 @@ import Section as sec
 
 def main():
 
-    a = sec.ordinaryRectangularSection(500,300,40,1,1,3,3,20,20)
-    print(a)
+    a = sec.concrete(30,1)
+    b = [a.tangentModulus(i/10000) for i in range(-10,50)]
+    print(b)
 
 
 
