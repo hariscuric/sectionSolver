@@ -34,6 +34,7 @@ class concrete(material):
         self.fcd = fck/gamaM
 
     def stress(self, strain):
+        strain = -strain
         if strain<0.0:
             return 0.0
         elif strain<=self.ec2:
@@ -46,6 +47,7 @@ class concrete(material):
             return 0.0
         
     def tangentModulus(self, strain):
+        strain = -strain
         if strain<0.0:
             return 0.0
         elif strain<=self.ec2:
