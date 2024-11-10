@@ -1,4 +1,5 @@
 import numpy as np
+import math as m
 
 
 
@@ -136,8 +137,11 @@ class section:
     def assignDiscretisation(self, n:int):
         self.sectionDiscretisation = n
 
-    def computeNMM(self,axialStrain,curvatureM3,curvatureM2):
+    def computeNMM(self,Strains):
         return np.array([0.0,0.0,0.0], dtype=float)
+
+    def computeK(self,Strains):
+        return np.zeros((3,3),dtype=float)
 
     
 
@@ -196,5 +200,72 @@ class ordinaryRectangularSection(section):
                 n = self.sectionMaterial.stress(a+c3*Y-c2*X)*incrementWidth*incrementHeight
                 m3 = n*Y; m2 = -n*X
                 N+=n; M3+=m3; M2+=m2
+
+        for i in range(len(self.rebarDiameters)):
+            X = self.rebarPositions[i,0]
+            Y = self.rebarPositions[i,1]
+            As = (self.rebarDiameters[i])**2*m.pi/4
+            n = self.rebarMaterial.stress(a+c3*Y-c2*X)*As
+            m3 = n*Y; m2 = -n*X
+            N+=n; M3+=m3; M2+=m2
+
+            nc = self.sectionMaterial.stress(a+c3*Y-c2*X)*As
+            m3c = nc*Y; m2c = -nc*X
+            N-=nc; M3-=m3c; M2-=m2c
+
         return np.array([N,M3,M2],dtype=float)
+
+    def computeK(self, Strains):
+        a = Strains[0]
+        c3 = Strains[1]
+        c2 = Strains[2]
+        K = np.zeros((3,3),dtype=float)
+        incrementWidth = self.width/self.sectionDiscretisation
+        incrementHeight = self.height/self.sectionDiscretisation
+        for i in range(self.sectionDiscretisation):
+            for ii in range(self.sectionDiscretisation):
+                X = -self.width/2+incrementWidth/2+incrementWidth*ii
+                Y = -self.height/2+incrementHeight/2+incrementHeight*i
+                K[0,0] += self.sectionMaterial.tangentModulus(a+c3*Y-c2*X)*incrementWidth*incrementHeight
+                K[0,1] += self.sectionMaterial.tangentModulus(a+c3*Y-c2*X)*Y*incrementWidth*incrementHeight
+                K[0,2] += self.sectionMaterial.tangentModulus(a+c3*Y-c2*X)*(-X)*incrementWidth*incrementHeight
+
+                K[1,0] += self.sectionMaterial.tangentModulus(a+c3*Y-c2*X)*Y*incrementWidth*incrementHeight
+                K[1,1] += self.sectionMaterial.tangentModulus(a+c3*Y-c2*X)*(Y**2)*incrementWidth*incrementHeight
+                K[1,2] += self.sectionMaterial.tangentModulus(a+c3*Y-c2*X)*(-X*Y)*incrementWidth*incrementHeight
+
+                K[2,0] += self.sectionMaterial.tangentModulus(a+c3*Y-c2*X)*(-X)*incrementWidth*incrementHeight
+                K[2,1] += self.sectionMaterial.tangentModulus(a+c3*Y-c2*X)*(-X*Y)*incrementWidth*incrementHeight
+                K[2,2] += self.sectionMaterial.tangentModulus(a+c3*Y-c2*X)*(X**2)*incrementWidth*incrementHeight
+
+        for i in range(len(self.rebarDiameters)):
+            X = self.rebarPositions[i,0]
+            Y = self.rebarPositions[i,1]
+            As = (self.rebarDiameters[i])**2*m.pi/4
+            K[0,0] += self.rebarMaterial.tangentModulus(a+c3*Y-c2*X)*As
+            K[0,1] += self.rebarMaterial.tangentModulus(a+c3*Y-c2*X)*Y*As
+            K[0,2] += self.rebarMaterial.tangentModulus(a+c3*Y-c2*X)*(-X)*As
+
+            K[1,0] += self.rebarMaterial.tangentModulus(a+c3*Y-c2*X)*Y*As
+            K[1,1] += self.rebarMaterial.tangentModulus(a+c3*Y-c2*X)*(Y**2)*As
+            K[1,2] += self.rebarMaterial.tangentModulus(a+c3*Y-c2*X)*(-X*Y)*As
+
+            K[2,0] += self.rebarMaterial.tangentModulus(a+c3*Y-c2*X)*(-X)*As
+            K[2,1] += self.rebarMaterial.tangentModulus(a+c3*Y-c2*X)*(-X*Y)*As
+            K[2,2] += self.rebarMaterial.tangentModulus(a+c3*Y-c2*X)*(X**2)*As
+
+
+            K[0,0] -= self.sectionMaterial.tangentModulus(a+c3*Y-c2*X)*As
+            K[0,1] -= self.sectionMaterial.tangentModulus(a+c3*Y-c2*X)*Y*As
+            K[0,2] -= self.sectionMaterial.tangentModulus(a+c3*Y-c2*X)*(-X)*As
+
+            K[1,0] -= self.sectionMaterial.tangentModulus(a+c3*Y-c2*X)*Y*As
+            K[1,1] -= self.sectionMaterial.tangentModulus(a+c3*Y-c2*X)*(Y**2)*As
+            K[1,2] -= self.sectionMaterial.tangentModulus(a+c3*Y-c2*X)*(-X*Y)*As
+
+            K[2,0] -= self.sectionMaterial.tangentModulus(a+c3*Y-c2*X)*(-X)*As
+            K[2,1] -= self.sectionMaterial.tangentModulus(a+c3*Y-c2*X)*(-X*Y)*As
+            K[2,2] -= self.sectionMaterial.tangentModulus(a+c3*Y-c2*X)*(X**2)*As
+
+        return K
             
