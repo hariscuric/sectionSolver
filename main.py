@@ -13,6 +13,11 @@ def main():
     Nmm = b.computeNMM(np.array([0.000746943,0.000005,0]))
     print(Nmm)
 
+    d, lamb = b.computeM_muDiagram(0.000001,50)
+
+    print(d)
+    print(lamb)
+
 
 
 

@@ -288,6 +288,7 @@ class ordinaryRectangularSection(section):
         fpc = fp[[False,True,False]]
 
         for i in range(increment_num):
+            print(i)
             deltad = np.array([0,mu_increment,0],dtype=float)
             d += deltad
 
@@ -296,11 +297,11 @@ class ordinaryRectangularSection(section):
             F = np.zeros((3),dtype=float)
             F[0:2] = F1 ; F[2] = F2[0]
             F_norm = np.linalg.norm(F)
-            while F_norm>0.1:
+            while F_norm>100:
                 K1 = np.zeros((3,3),dtype=float)
                 K1[:] = K[:]
-                K1[0:2,2] = fpt
-                K1[2,2] = fpc[0]
+                K1[0:2,2] = -fpt
+                K1[2,2] = -fpc[0]
 
                 sol = np.linalg.solve(K1,F)
                 d[0] += sol[0]
