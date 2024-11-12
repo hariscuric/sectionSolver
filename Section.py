@@ -39,11 +39,11 @@ class concrete(material):
         if strain<0.0:
             return 0.0
         elif strain<=self.ec2:
-            return self.fcd * (1-(1-strain/self.ec2)**self.n)
+            return -self.fcd * (1-(1-strain/self.ec2)**self.n)
         elif strain<=self.ecu2:
-            return self.fcd
+            return -self.fcd
         elif strain>self.ecu2 and strain<=self.ecu2*1.05:
-            return self.fcd*((self.ecu2*1.05-strain)/(0.05*self.ecu2))
+            return -self.fcd*((self.ecu2*1.05-strain)/(0.05*self.ecu2))
         else:
             return 0.0
         
@@ -268,4 +268,64 @@ class ordinaryRectangularSection(section):
             K[2,2] -= self.sectionMaterial.tangentModulus(a+c3*Y-c2*X)*(X**2)*As
 
         return K
+    
+    def computeM_muDiagram(self,mu_increment,increment_num):
+        K = self.computeK(np.zeros((3),dtype=float))
+        fint = self.computeNMM(np.zeros((3),dtype=float))
+        fext = np.zeros((3),dtype=float)
+        d_all = np.zeros((increment_num+1, 3),dtype=float)
+        d = np.zeros((3),dtype=float)
+        lamb_all = np.zeros((increment_num+1),dtype=float)
+        lamb = 0.0
+
+        
+        Ktc = K[[True,False,True],][:,[False,True,False]]
+        
+        Kcc = K[[False,True,False],][:,[False,True,False]]
+
+        fp = np.array([0,1,0],dtype=float)
+        fpt = fp[[True,False,True]]
+        fpc = fp[[False,True,False]]
+
+        for i in range(increment_num):
+            deltad = np.array([0,mu_increment,0],dtype=float)
+            d += deltad
+
+            F1 = -np.matmul(Ktc,deltad[[1]]) + fext[[True,False,True]] - fint[[True,False,True]]
+            F2 = -np.matmul(Kcc,deltad[[1]]) + fext[[False,True,False]] - fint[[False,True,False]]
+            F = np.zeros((3),dtype=float)
+            F[0:2] = F1 ; F[2] = F2[0]
+            F_norm = np.linalg.norm(F)
+            while F_norm>0.1:
+                K1 = np.zeros((3,3),dtype=float)
+                K1[:] = K[:]
+                K1[0:2,2] = fpt
+                K1[2,2] = fpc[0]
+
+                sol = np.linalg.solve(K1,F)
+                d[0] += sol[0]
+                d[2] += sol[1]
+                lamb += sol[2]
+                deltad[1] = 0.0
+
+                K = self.computeK(d)
+                fint = self.computeNMM(d)
+                fext += sol[2] * fp
+                Ktc = K[[True,False,True],][:,[False,True,False]]
+                Kcc = K[[False,True,False],][:,[False,True,False]]
+                F1 = fext[[True,False,True]] - fint[[True,False,True]]
+                F2 = fext[[False,True,False]] - fint[[False,True,False]]
+                F = np.zeros((3),dtype=float)
+                F[0:2] = F1 ; F[2] = F2[0]
+                F_norm = np.linalg.norm(F)
+            d_all[i+1,:] = d
+            lamb_all[i+1] = lamb
+
+        return (d_all,lamb_all)
+
+            
+
+                
+
+
             
