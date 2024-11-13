@@ -42,10 +42,12 @@ class concrete(material):
             return -self.fcd * (1-(1-strain/self.ec2)**self.n)
         elif strain<=self.ecu2:
             return -self.fcd
-        elif strain>self.ecu2 and strain<=self.ecu2*1.05:
-            return -self.fcd*((self.ecu2*1.05-strain)/(0.05*self.ecu2))
+        # elif strain>self.ecu2 and strain<=self.ecu2*1.5:
+        #     return -0.05*self.fcd-0.95*self.fcd*((self.ecu2*1.5-strain)/(0.5*self.ecu2))
+        # elif strain>self.ecu2*1.5:
+        #     return -0.05*self.fcd
         else:
-            return 0.0
+            return -self.fcd
         
     def tangentModulus(self, strain):
         strain = -strain
@@ -53,8 +55,8 @@ class concrete(material):
             return 0.0
         elif strain<=self.ec2:
             return (self.n*self.fcd/self.ec2)*((1-strain/self.ec2)**(self.n-1))
-        elif strain>self.ecu2 and strain<=self.ecu2*1.05:
-            return -self.fcd/(0.05*self.ecu2)
+        # elif strain>self.ecu2 and strain<=self.ecu2*1.5:
+        #     return -0.95*self.fcd/(0.5*self.ecu2)
         else:
             return 0.0
 
@@ -288,6 +290,7 @@ class ordinaryRectangularSection(section):
         fpc = fp[[False,True,False]]
 
         for i in range(increment_num):
+            print(i)
             deltad = np.array([0,mu_increment,0],dtype=float)
             d += deltad
 
