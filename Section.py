@@ -278,9 +278,9 @@ class ordinaryRectangularSection(section):
         lamb_all = np.zeros((increment_num+1),dtype=float)
         lamb = 0.0
 
-        
+        Ktt = K[[True,False,True],][:,[True,False,True]]
         Ktc = K[[True,False,True],][:,[False,True,False]]
-        
+        Kct = K[[False,True,False],][:,[True,False,True]]
         Kcc = K[[False,True,False],][:,[False,True,False]]
 
         fp = np.array([0,1,0],dtype=float)
@@ -288,7 +288,6 @@ class ordinaryRectangularSection(section):
         fpc = fp[[False,True,False]]
 
         for i in range(increment_num):
-            print(i)
             deltad = np.array([0,mu_increment,0],dtype=float)
             d += deltad
 
@@ -297,9 +296,10 @@ class ordinaryRectangularSection(section):
             F = np.zeros((3),dtype=float)
             F[0:2] = F1 ; F[2] = F2[0]
             F_norm = np.linalg.norm(F)
-            while F_norm>100:
+            while F_norm>10:
                 K1 = np.zeros((3,3),dtype=float)
-                K1[:] = K[:]
+                K1[0:2,0:2] = Ktt
+                K1[2,0:2] = Kct
                 K1[0:2,2] = -fpt
                 K1[2,2] = -fpc[0]
 
@@ -312,7 +312,9 @@ class ordinaryRectangularSection(section):
                 K = self.computeK(d)
                 fint = self.computeNMM(d)
                 fext += sol[2] * fp
+                Ktt = K[[True,False,True],][:,[True,False,True]]
                 Ktc = K[[True,False,True],][:,[False,True,False]]
+                Kct = K[[False,True,False],][:,[True,False,True]]
                 Kcc = K[[False,True,False],][:,[False,True,False]]
                 F1 = fext[[True,False,True]] - fint[[True,False,True]]
                 F2 = fext[[False,True,False]] - fint[[False,True,False]]
