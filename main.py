@@ -1,5 +1,6 @@
 import Section as sec
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def main():
@@ -23,7 +24,7 @@ def main():
 
     
     steel = sec.steel(420,1.15)
-    b = sec.ordinaryRectangularSection(500,300,50,1,1,0,0,14,14)
+    b = sec.ordinaryRectangularSection(400,250,40,1,1,0,0,14,14)
     b.assignSectionMaterial(con)
     b.assignRebarMaterial(steel)
     b.assignDiscretisation(100)
@@ -45,6 +46,13 @@ def main():
     Nmm = b.computeNMM(d[-1])
     print("Nmm at curvature of 0.0002/mm")
     print(Nmm)
+
+    plt.plot(d[:,1]*1000, lamb*0.000001)
+    plt.title("M3 moment - curvature graph; Normal force = 0")
+    plt.xlabel("Curvature (1/m)")
+    plt.ylabel("M3 moment (kNm)")
+    plt.grid()
+    plt.show()
 
 
 
