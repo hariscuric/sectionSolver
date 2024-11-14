@@ -34,31 +34,40 @@ class concrete(material):
         self.fck = fck
         self.fcd = fck/gamaM
 
-    def stress(self, strain):
+    def stress(self, strain, confined=False):
+        if confined:
+            strainMax = self.ecu2 * 10
+        else:
+            strainMax = self.ecu2
         strain = -strain
         if strain<0.0:
             return 0.0
         elif strain<=self.ec2:
             return -self.fcd * (1-(1-strain/self.ec2)**self.n)
-        elif strain<=self.ecu2:
+        elif strain<=strainMax:
             return -self.fcd
-        # elif strain>self.ecu2 and strain<=self.ecu2*1.5:
-        #     return -0.05*self.fcd-0.95*self.fcd*((self.ecu2*1.5-strain)/(0.5*self.ecu2))
-        # elif strain>self.ecu2*1.5:
-        #     return -0.05*self.fcd
+        elif strain>strainMax and strain<=strainMax*1.2:
+             return -0.02*self.fcd-0.98*self.fcd*((strainMax*1.2-strain)/(0.2*strainMax))
+        elif strain>strainMax*1.2:
+             return -0.02*self.fcd
         else:
             return -self.fcd
         
-    def tangentModulus(self, strain):
+    def tangentModulus(self, strain, confined=False):
+        if confined:
+            strainMax = self.ecu2 * 10
+        else:
+            strainMax = self.ecu2
         strain = -strain
         if strain<0.0:
             return 0.0
         elif strain<=self.ec2:
             return (self.n*self.fcd/self.ec2)*((1-strain/self.ec2)**(self.n-1))
-        # elif strain>self.ecu2 and strain<=self.ecu2*1.5:
-        #     return -0.95*self.fcd/(0.5*self.ecu2)
+        elif strain>strainMax and strain<=strainMax*1.2:
+            return -0.98*self.fcd/(0.2*strainMax)
         else:
             return 0.0
+        
 
 
 
@@ -186,7 +195,7 @@ class ordinaryRectangularSection(section):
 
 
         super().__init__(sectionCorners, rebarPositions, rebarDiameters)
-        self.width = width; self.height = height
+        self.width = width; self.height = height ; self.concreteCover = concreteCover
 
     def computeNMM(self,Strains):
         a = Strains[0]
@@ -199,7 +208,11 @@ class ordinaryRectangularSection(section):
             for ii in range(self.sectionDiscretisation):
                 X = -self.width/2+incrementWidth/2+incrementWidth*ii
                 Y = -self.height/2+incrementHeight/2+incrementHeight*i
-                n = self.sectionMaterial.stress(a+c3*Y-c2*X)*incrementWidth*incrementHeight
+                if abs(X)<abs(self.width/2-self.concreteCover-self.rebarDiameters[0]-incrementWidth/2) and abs(Y)<abs(self.height/2-self.concreteCover-self.rebarDiameters[0]-incrementHeight/2):
+                    confined = True
+                else:
+                    confined = False
+                n = self.sectionMaterial.stress(a+c3*Y-c2*X,confined)*incrementWidth*incrementHeight
                 m3 = n*Y; m2 = -n*X
                 N+=n; M3+=m3; M2+=m2
 
@@ -228,17 +241,21 @@ class ordinaryRectangularSection(section):
             for ii in range(self.sectionDiscretisation):
                 X = -self.width/2+incrementWidth/2+incrementWidth*ii
                 Y = -self.height/2+incrementHeight/2+incrementHeight*i
-                K[0,0] += self.sectionMaterial.tangentModulus(a+c3*Y-c2*X)*incrementWidth*incrementHeight
-                K[0,1] += self.sectionMaterial.tangentModulus(a+c3*Y-c2*X)*Y*incrementWidth*incrementHeight
-                K[0,2] += self.sectionMaterial.tangentModulus(a+c3*Y-c2*X)*(-X)*incrementWidth*incrementHeight
+                if abs(X)<abs(self.width/2-self.concreteCover-self.rebarDiameters[0]-incrementWidth/2) and abs(Y)<abs(self.height/2-self.concreteCover-self.rebarDiameters[0]-incrementHeight/2):
+                    confined = True
+                else:
+                    confined = False
+                K[0,0] += self.sectionMaterial.tangentModulus(a+c3*Y-c2*X,confined)*incrementWidth*incrementHeight
+                K[0,1] += self.sectionMaterial.tangentModulus(a+c3*Y-c2*X,confined)*Y*incrementWidth*incrementHeight
+                K[0,2] += self.sectionMaterial.tangentModulus(a+c3*Y-c2*X,confined)*(-X)*incrementWidth*incrementHeight
 
-                K[1,0] += self.sectionMaterial.tangentModulus(a+c3*Y-c2*X)*Y*incrementWidth*incrementHeight
-                K[1,1] += self.sectionMaterial.tangentModulus(a+c3*Y-c2*X)*(Y**2)*incrementWidth*incrementHeight
-                K[1,2] += self.sectionMaterial.tangentModulus(a+c3*Y-c2*X)*(-X*Y)*incrementWidth*incrementHeight
+                K[1,0] += self.sectionMaterial.tangentModulus(a+c3*Y-c2*X,confined)*Y*incrementWidth*incrementHeight
+                K[1,1] += self.sectionMaterial.tangentModulus(a+c3*Y-c2*X,confined)*(Y**2)*incrementWidth*incrementHeight
+                K[1,2] += self.sectionMaterial.tangentModulus(a+c3*Y-c2*X,confined)*(-X*Y)*incrementWidth*incrementHeight
 
-                K[2,0] += self.sectionMaterial.tangentModulus(a+c3*Y-c2*X)*(-X)*incrementWidth*incrementHeight
-                K[2,1] += self.sectionMaterial.tangentModulus(a+c3*Y-c2*X)*(-X*Y)*incrementWidth*incrementHeight
-                K[2,2] += self.sectionMaterial.tangentModulus(a+c3*Y-c2*X)*(X**2)*incrementWidth*incrementHeight
+                K[2,0] += self.sectionMaterial.tangentModulus(a+c3*Y-c2*X,confined)*(-X)*incrementWidth*incrementHeight
+                K[2,1] += self.sectionMaterial.tangentModulus(a+c3*Y-c2*X,confined)*(-X*Y)*incrementWidth*incrementHeight
+                K[2,2] += self.sectionMaterial.tangentModulus(a+c3*Y-c2*X,confined)*(X**2)*incrementWidth*incrementHeight
 
         for i in range(len(self.rebarDiameters)):
             X = self.rebarPositions[i,0]

@@ -38,8 +38,13 @@ def main():
 
     print("Nmm:")
 
-    Nmm = b.computeNMM(np.array([0.0069,0.00005,0]))
-    print(d[115])
+    
+    print("curvature at max 68kNm")
+    print(d[6])
+
+    Nmm = b.computeNMM(d[-1])
+    print("Nmm at curvature of 0.0002/mm")
+    print(Nmm)
 
 
 
