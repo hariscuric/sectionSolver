@@ -30,7 +30,7 @@ def main():
     b.assignDiscretisation(100)
     
 
-    d, lamb = b.computeM_muDiagram(0.000001,200)
+    d, lamb = b.computeM_muDiagram(0.000001,160,0)
 
     print("d:")
     print(d)

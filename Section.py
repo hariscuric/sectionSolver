@@ -288,10 +288,11 @@ class ordinaryRectangularSection(section):
 
         return K
     
-    def computeM_muDiagram(self,mu_increment,increment_num):
+    def computeM_muDiagram(self,mu_increment,increment_num, NormalForce):
         K = self.computeK(np.zeros((3),dtype=float))
         fint = self.computeNMM(np.zeros((3),dtype=float))
         fext = np.zeros((3),dtype=float)
+        fext[0] = NormalForce
         d_all = np.zeros((increment_num+1, 3),dtype=float)
         d = np.zeros((3),dtype=float)
         lamb_all = np.zeros((increment_num+1),dtype=float)
@@ -345,6 +346,14 @@ class ordinaryRectangularSection(section):
             lamb_all[i+1] = lamb
 
         return (d_all,lamb_all)
+    
+
+    def computeAxialStrength(self):
+        return 0
+
+
+    def computeElasticStrength(self,loadProfile,initialNormalForce):
+        return 0
 
             
 
