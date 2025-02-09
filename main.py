@@ -24,13 +24,13 @@ def main():
 
     
     steel = sec.steel(420,1.15)
-    b = sec.ordinaryRectangularSection(400,250,40,1,1,0,0,14,14)
+    b = sec.ordinaryRectangularSection(1000,350,40,1,1,4,4,16,16)
     b.assignSectionMaterial(con)
     b.assignRebarMaterial(steel)
     b.assignDiscretisation(100)
     
 
-    d, lamb = b.computeM_muDiagram(0.000001,160,0)
+    d, lamb = b.computeM_muDiagram(0.000001,34,-2000000)
 
     print("d:")
     print(d)
